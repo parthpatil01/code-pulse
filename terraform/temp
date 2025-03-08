@@ -1,0 +1,9 @@
+-- export AWS_REGION=us-east-1
+-- export SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/494938070824/code-execution-queue
+-- export S3_BUCKET_NAME=code-editor-storage-789452154
+-- export DB_HOST=submissions-db.c2fbuvcm5pfl.us-east-1.rds.amazonaws.com
+-- export DB_USER=admin
+-- export DB_PASSWORD=root1234
+-- export DB_NAME=submissions
+
+-- node /home/ec2-user/code-executor/worker.js

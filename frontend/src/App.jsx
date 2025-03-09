@@ -3,7 +3,7 @@ import axios from "axios"; // Import axios
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 
-const API_URL = "https://f2dzkao162.execute-api.us-east-1.amazonaws.com/prod";
+const API_URL = import.meta.env.VITE_API_URL; // Set API_URL to the value of REACT_APP_API_URL
 
 const App = () => {
   const [code, setCode] = useState("// Write your code here\n");

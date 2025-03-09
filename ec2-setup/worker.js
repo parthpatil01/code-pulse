@@ -23,46 +23,28 @@ let connection;
 // Language configurations
 const languageConfigs = {
   javascript: {
-    command: (code, filePath) => {
-      const filePathWithExtension = `${filePath}.js`;
-      fs.writeFileSync(filePathWithExtension, code);
-      return {
-        command: `node "${filePathWithExtension}"`,
-        filesToCleanup: [filePathWithExtension],
-        extension: '.js'
-      };
-    },
+    extension: '.js',
+    execPrefix: 'node',
+    prepare: (code, filePath) => {
+      return { className: null };
+    }
   },
   python: {
-    command: (code, filePath) => {
-      const filePathWithExtension = `${filePath}.py`;
-      fs.writeFileSync(filePathWithExtension, code);
-      return {
-        command: `python "${filePathWithExtension}"`,
-        filesToCleanup: [filePathWithExtension],
-        extension: '.py'
-      };
-    },
+    extension: '.py',
+    execPrefix: 'python3',
+    prepare: (code, filePath) => {
+      return { className: null };
+    }
   },
   java: {
-    command: (code, filePath) => {
+    extension: '.java',
+    execPrefix: null, // Special handling for Java
+    prepare: (code, filePath) => {
       // Extract class name
       const classNameMatch = /class\s+(\w+)/.exec(code);
       const className = classNameMatch ? classNameMatch[1] : 'Main';
-      
-      const directory = path.dirname(filePath);
-      const filePathWithExtension = path.join(directory, `${className}.java`);
-      const classFilePath = path.join(directory, `${className}.class`);
-      
-      fs.writeFileSync(filePathWithExtension, code);
-      
-      return {
-        command: `javac "${filePathWithExtension}" && java -cp "${directory}" ${className}`,
-        filesToCleanup: [filePathWithExtension, classFilePath],
-        extension: '.java',
-        className: className
-      };
-    },
+      return { className };
+    }
   },
 };
 
@@ -79,15 +61,80 @@ async function connectToDatabase() {
   return connection;
 }
 
+// Update submission status in database
+async function updateSubmissionStatus(submissionId, status, outputPath = null, errorMessage = null) {
+  const db = await connectToDatabase();
+  
+  const updateFields = ['status'];
+  const updateValues = [status];
+  
+  if (status === 'running') {
+    // Only update status for running
+    await db.execute(
+      'UPDATE submissions SET status = ? WHERE id = ?',
+      [status, submissionId]
+    );
+  } else {
+    // For completed or error, update more fields
+    await db.execute(
+      'UPDATE submissions SET status = ?, output_path = ?, error_message = ?, completed_at = NOW() WHERE id = ?',
+      [status, outputPath, errorMessage, submissionId]
+    );
+  }
+}
+
+// Execute code in Docker container
+async function executeInDocker(language, filePath, className = null) {
+  const config = languageConfigs[language];
+  const filePathWithExt = `${filePath}${config.extension}`;
+  let dockerCommand;
+  
+  if (language === 'java') {
+    // Special handling for Java
+    const javaFileName = `${className}.java`;
+    const tempDir = path.dirname(filePath);
+    const javaFilePath = path.join(tempDir, javaFileName);
+    
+    dockerCommand = `docker run --rm --network none --memory=100m --cpus=0.5 --pids-limit=50 ` +
+      `-v "${javaFilePath}:/code/${javaFileName}" ` +
+      `code-executor-image sh -c "cd /code && javac ${javaFileName} && java ${className}"`;
+  } else {
+    // For JavaScript and Python
+    const containerFileName = path.basename(filePath) + config.extension;
+    const containerFilePath = `/code/${containerFileName}`;
+    
+    dockerCommand = `docker run --rm --network none --memory=100m --cpus=0.5 --pids-limit=50 ` +
+      `-v "${filePathWithExt}:${containerFilePath}" ` +
+      `code-executor-image sh -c "${config.execPrefix} ${containerFilePath}"`;
+  }
+  
+  console.log(`Docker command: ${dockerCommand}`);
+  return await execPromise(dockerCommand);
+}
+
+// Remove message from SQS queue
+async function removeFromQueue(receiptHandle) {
+  try {
+    await sqs.deleteMessage({
+      QueueUrl: process.env.SQS_QUEUE_URL,
+      ReceiptHandle: receiptHandle
+    }).promise();
+    console.log('Message deleted from queue');
+  } catch (error) {
+    console.error('Error deleting message from queue:', error);
+  }
+}
+
 // Process a single message
 async function processMessage(message) {
   console.log('Processing message:', message);
-
   let filesToCleanup = [];
+  let submissionId;
 
   try {
     const body = JSON.parse(message.Body);
-    const { submissionId, language, s3Key } = body;
+    submissionId = body.submissionId;
+    const { language, s3Key } = body;
 
     console.log(`Processing submission ${submissionId} in ${language}`);
 
@@ -99,56 +146,39 @@ async function processMessage(message) {
 
     const code = s3Response.Body.toString('utf-8');
 
-    // Prepare for execution
+    // Prepare temp file path
     const tempFilePath = path.join(os.tmpdir(), `temp_${submissionId}`);
     console.log(`Temp file path: ${tempFilePath}`);
 
-    // Get the language-specific command and files to cleanup
-    const result = languageConfigs[language].command(code, tempFilePath);
-    const execCommand = result.command;
-    filesToCleanup = result.filesToCleanup || [];
-    const fileExtension = result.extension;
-    const className = result.className; // Only used for Java
+    // Get the language configuration
+    const config = languageConfigs[language];
+    if (!config) {
+      throw new Error(`Unsupported language: ${language}`);
+    }
 
-    console.log(`Executing command: ${execCommand}`);
-
-    // Connect to database
-    const db = await connectToDatabase();
+    // Prepare code and get necessary information
+    const { className } = config.prepare(code, tempFilePath);
+    
+    // Write code to file
+    const filePathWithExt = `${tempFilePath}${config.extension}`;
+    
+    if (language === 'java' && className) {
+      // For Java, write to a file named after the class
+      const tempDir = path.dirname(tempFilePath);
+      const javaFilePath = path.join(tempDir, `${className}.java`);
+      fs.writeFileSync(javaFilePath, code);
+      filesToCleanup.push(javaFilePath, path.join(tempDir, `${className}.class`));
+    } else {
+      // For other languages
+      fs.writeFileSync(filePathWithExt, code);
+      filesToCleanup.push(filePathWithExt);
+    }
 
     // Update status to running
-    await db.execute(
-      'UPDATE submissions SET status = ? WHERE id = ?',
-      ['running', submissionId]
-    );
+    await updateSubmissionStatus(submissionId, 'running');
 
-    // Execute the code in Docker container for security
-    let dockerCommand;
-    
-    if (language === 'java') {
-      // Special handling for Java
-      const javaFileName = `${className}.java`;
-      const tempDir = path.dirname(tempFilePath);
-      const javaFilePath = path.join(tempDir, javaFileName);
-      
-      dockerCommand = `docker run --rm --network none --memory=100m --cpus=0.5 --pids-limit=50 ` +
-        `-v "${javaFilePath}:/code/${javaFileName}" ` +
-        `code-executor-image sh -c "cd /code && javac ${javaFileName} && java ${className}"`;
-    } else {
-      // For JavaScript and Python
-      const tempFilePathWithExt = `${tempFilePath}${fileExtension}`;
-      const containerFileName = path.basename(tempFilePath) + fileExtension;
-      const containerFilePath = `/code/${containerFileName}`;
-      
-      const execPrefix = language === 'javascript' ? 'node' : 
-                         language === 'python' ? 'python' : '';
-      
-      dockerCommand = `docker run --rm --network none --memory=100m --cpus=0.5 --pids-limit=50 ` +
-        `-v "${tempFilePathWithExt}:${containerFilePath}" ` +
-        `code-executor-image sh -c "${execPrefix} ${containerFilePath}"`;
-    }
-    
-    console.log(`Docker command: ${dockerCommand}`);
-    const { stdout, stderr } = await execPromise(dockerCommand);
+    // Execute code in Docker
+    const { stdout, stderr } = await executeInDocker(language, tempFilePath, className);
 
     console.log('Execution completed');
     console.log('stdout:', stdout);
@@ -164,30 +194,28 @@ async function processMessage(message) {
     }).promise();
 
     // Update database with results
-    await db.execute(
-      'UPDATE submissions SET status = ?, output_path = ?, completed_at = NOW() WHERE id = ?',
-      [stderr ? 'error' : 'completed', outputKey, submissionId]
+    await updateSubmissionStatus(
+      submissionId, 
+      stderr ? 'error' : 'completed', 
+      outputKey,
+      stderr || null
     );
 
-    // Delete the message from the queue
-    await sqs.deleteMessage({
-      QueueUrl: process.env.SQS_QUEUE_URL,
-      ReceiptHandle: message.ReceiptHandle
-    }).promise();
+    // Delete the message from the queue regardless of execution success or failure
+    await removeFromQueue(message.ReceiptHandle);
 
   } catch (error) {
     console.error('Error processing message:', error);
 
     try {
-      // Connect to database
-      const db = await connectToDatabase();
-
-      // Update status to error
-      const submissionId = JSON.parse(message.Body).submissionId;
-      await db.execute(
-        'UPDATE submissions SET status = ?, error_message = ?, completed_at = NOW() WHERE id = ?',
-        ['error', error.message, submissionId]
-      );
+      // Update status to error if we have a submissionId
+      if (submissionId) {
+        await updateSubmissionStatus(submissionId, 'error', null, error.message);
+      }
+      
+      // Always remove the message from the queue even if processing failed
+      await removeFromQueue(message.ReceiptHandle);
+      
     } catch (dbError) {
       console.error('Error updating database:', dbError);
     }
@@ -210,7 +238,7 @@ async function processMessage(message) {
 async function pollMessages() {
   try {
     console.log('Polling for messages...');
-    console.log(process.env.SQS_QUEUE_URL)
+    console.log(process.env.SQS_QUEUE_URL);
     const response = await sqs.receiveMessage({
       QueueUrl: process.env.SQS_QUEUE_URL,
       MaxNumberOfMessages: 5,

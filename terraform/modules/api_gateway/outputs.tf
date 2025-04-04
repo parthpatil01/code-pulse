@@ -1,5 +1,5 @@
 output "api_gateway_url" {
-  value = "${aws_api_gateway_deployment.api_deployment.invoke_url}/${aws_api_gateway_resource.run_code.path_part}"
+  value = aws_api_gateway_deployment.api_deployment.invoke_url
 }
 
 output "execution_arn" {

@@ -22,6 +22,23 @@ module "ec2" {
   source       = "./modules/ec2"
   ec2_ami      = var.ec2_ami
   ec2_key_name = var.ec2_key_name
+  db_host        = module.rds.db_host
+  db_user        = var.db_username
+  db_password    = var.db_password
+  db_name        = var.db_name
+  s3_bucket_name = module.s3.s3_bucket_name
+  sqs_queue_url  = module.sqs.sqs_queue_url
+  aws_region     = var.aws_region
+}
+
+module "frontend" {
+  source = "./modules/frontend"
+  ec2_ami      = var.ec2_ami
+  ec2_key_name = var.ec2_key_name
+  subnet_id       = "subnet-000e5e336e5a79098" 
+  docker_username = "parthpatil01"
+  frontend_image  = "frontend-code-editor"
+  api_gateway_url = module.api_gateway.api_gateway_url
 }
 
 module "lambda" {

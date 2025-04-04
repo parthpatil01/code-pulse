@@ -35,6 +35,13 @@ resource "aws_launch_template" "code_executor_lt" {
     worker_js_content  = base64encode(file("${path.module}/../../../ec2-setup/worker.js"))
     dockerfile_content = base64encode(file("${path.module}/../../../ec2-setup/Dockerfile"))
     setup_sh_content   = base64encode(file("${path.module}/../../../ec2-setup/setup.sh"))
+    db_host            = var.db_host
+    db_user            = var.db_user
+    db_password        = var.db_password
+    db_name            = var.db_name
+    s3_bucket_name     = var.s3_bucket_name
+    sqs_queue_url      = var.sqs_queue_url
+    aws_region         = var.aws_region
   }))
 
   tag_specifications {

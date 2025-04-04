@@ -9,6 +9,6 @@ resource "aws_db_instance" "submissions_db" {
   db_name              = var.db_name
   parameter_group_name = "default.mysql8.0"
   skip_final_snapshot  = true
-  publicly_accessible  = false
+  publicly_accessible  = true
 }
 

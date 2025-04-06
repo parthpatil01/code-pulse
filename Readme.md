@@ -22,6 +22,7 @@ CodePulse Pro is a web-based code editor and execution platform running on AWS t
 ## Tech Stack
 
 ### Infrastructure
+- **AWS**: Core cloud platform for storage, messaging, and compute services.
 - **Terraform**: For provisioning AWS resources.
 - **Docker**: For secure and isolated code execution.
 

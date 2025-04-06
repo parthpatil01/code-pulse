@@ -1,5 +1,4 @@
 
-```md
 # CodePulse
 
 CodePulse Pro is a web-based code editor and execution platform running on AWS that supports multiple programming languages, including JavaScript, Python, and Java. It allows users to write, execute, and manage code files seamlessly, with features like file management, syntax highlighting, and real-time output.
@@ -163,5 +162,3 @@ This project is licensed under the [MIT License](LICENSE).
 - [AWS SDK](https://aws.amazon.com/sdk-for-javascript/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Terraform](https://www.terraform.io/)
-
-```

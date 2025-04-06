@@ -1,7 +1,7 @@
 
 # CodePulse
 
-CodePulse is a web-based code editor and execution platform running on AWS that supports multiple programming languages, including JavaScript, Python, and Java. It allows users to write, execute, and manage code files seamlessly, with features like file management, syntax highlighting, and real-time output.
+CodePulse is a web-based code execution platform running on AWS that supports multiple programming languages, including JavaScript, Python, and Java. It allows users to write, execute, and manage code files seamlessly, with features like file management, syntax highlighting, and real-time output.
 
 ![CodePulse Screenshot](https://imgur.com/1Khk9fz.jpg)
 

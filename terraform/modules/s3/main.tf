@@ -19,3 +19,18 @@ resource "aws_s3_bucket_public_access_block" "code_storage" {
   restrict_public_buckets = true
 }
 
+resource "aws_cloudwatch_metric_alarm" "s3_errors" {
+  alarm_name          = "s3-${aws_s3_bucket.code_storage.bucket}-errors-alarm"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "5xxErrors"
+  namespace          = "AWS/S3"
+  period             = 300  # 5 minutes
+  statistic          = "Sum"
+  threshold          = 0    # Alert on any errors
+  alarm_description  = "Alerts when S3 returns 5xx errors"
+
+  dimensions = {
+    BucketName = aws_s3_bucket.code_storage.bucket
+  }
+}

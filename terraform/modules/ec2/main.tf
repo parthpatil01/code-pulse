@@ -89,3 +89,35 @@ resource "aws_autoscaling_policy" "scale_out" {
     target_value = 70.0
   }
 }
+
+resource "aws_cloudwatch_metric_alarm" "asg_cpu" {
+  alarm_name          = "code-executor-asg-cpu-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "120"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "ASG CPU utilization threshold breached"
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.code_executor_asg.name
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "asg_status" {
+  alarm_name          = "code-executor-asg-status-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "StatusCheckFailed"
+  namespace           = "AWS/EC2"
+  period              = "60"
+  statistic           = "Maximum"
+  threshold           = "1"
+  alarm_description   = "ASG instance status check failed"
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.code_executor_asg.name
+  }
+}

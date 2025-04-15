@@ -41,3 +41,40 @@ resource "aws_lambda_function" "lambda_submit" {
     }
   }
 }
+
+
+resource "aws_cloudwatch_metric_alarm" "lambda_status_errors" {
+  alarm_name          = "${aws_lambda_function.lambda_status.function_name}-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace          = "AWS/Lambda"
+  period             = 60  # 1 minute
+  statistic          = "Sum"
+  threshold          = 0   # Alert on any error
+  treat_missing_data = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.lambda_status.function_name
+  }
+
+  alarm_description = "Triggers when status Lambda has execution errors"
+}
+
+resource "aws_cloudwatch_metric_alarm" "lambda_submit_errors" {
+  alarm_name          = "${aws_lambda_function.lambda_submit.function_name}-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Errors"
+  namespace          = "AWS/Lambda"
+  period             = 60
+  statistic          = "Sum"
+  threshold          = 0
+  treat_missing_data = "notBreaching"
+
+  dimensions = {
+    FunctionName = aws_lambda_function.lambda_submit.function_name
+  }
+
+  alarm_description = "Triggers when submit Lambda has execution errors"
+}

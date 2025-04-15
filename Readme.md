@@ -1,7 +1,7 @@
 
 # CodePulse
 
-CodePulse Pro is a web-based code editor and execution platform running on AWS that supports multiple programming languages, including JavaScript, Python, and Java. It allows users to write, execute, and manage code files seamlessly, with features like file management, syntax highlighting, and real-time output.
+CodePulse is a web-based code execution platform running on AWS that supports multiple programming languages, including JavaScript, Python, and Java. It allows users to write, execute, and manage code files seamlessly, with features like file management, syntax highlighting, and real-time output.
 
 ![CodePulse Screenshot](https://imgur.com/1Khk9fz.jpg)
 
@@ -22,6 +22,7 @@ CodePulse Pro is a web-based code editor and execution platform running on AWS t
 ## Tech Stack
 
 ### Infrastructure
+- **AWS**: Core cloud platform for storage, messaging, and compute services.
 - **Terraform**: For provisioning AWS resources.
 - **Docker**: For secure and isolated code execution.
 
@@ -162,5 +163,3 @@ This project is licensed under the [MIT License](LICENSE).
 - [AWS SDK](https://aws.amazon.com/sdk-for-javascript/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Terraform](https://www.terraform.io/)
-
-```

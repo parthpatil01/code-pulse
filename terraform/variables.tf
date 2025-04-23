@@ -40,3 +40,22 @@ variable "ec2_key_name" {
   description = "Key pair name for the EC2 instance"
   type        = string
 }
+
+
+variable "PINECONE_INDEX" {
+  description = "Pinecone index name"
+  type        = string  
+  
+}
+
+variable "OPENAI_API_KEY" {
+  description = "OpenAI API key"
+  type        = string    
+  
+}
+
+variable "PINECONE_API_KEY" {
+  description = "Pinecone API key"
+  type        = string      
+  
+}

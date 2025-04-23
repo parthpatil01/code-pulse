@@ -7,3 +7,8 @@ terraform/terraform.tfvars.json
 frontend/node_modules/
 ec2-setup/node_modules/
 ec2-setup/.env
+backend/refactor/node_modules/
+backend/check-status/node_modules/
+backend/submit-code/node_modules/
+vector-store-upload/node_modules/
+vector-store-upload/.env

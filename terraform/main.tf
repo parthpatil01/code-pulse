@@ -50,6 +50,9 @@ module "lambda" {
   lambda_role_arn = var.lambda_role_arn
   s3_bucket_name  = var.s3_bucket_name
   sqs_queue_url   = module.sqs.sqs_queue_url
+  PINECONE_INDEX  = var.PINECONE_INDEX
+  OPENAI_API_KEY  = var.OPENAI_API_KEY
+  PINECONE_API_KEY = var.PINECONE_API_KEY 
 }
 
 
@@ -57,6 +60,7 @@ module "api_gateway" {
   source                      = "./modules/api_gateway"
   lambda_submit_invoke_arn    = module.lambda.lambda_submit_invoke_arn
   lambda_status_invoke_arn    = module.lambda.lambda_status_invoke_arn
+  lambda_refactor_invoke_arn =  module.lambda.lambda_refactor_invoke_arn
 }
 
 # Allow API Gateway to invoke the "submit-code" Lambda function
@@ -75,4 +79,15 @@ resource "aws_lambda_permission" "api_gateway_status" {
   function_name = module.lambda.lambda_status_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.execution_arn}/*/*/*"
+}
+
+resource "aws_lambda_permission" "api_gateway_refactor_lambda" {
+  statement_id  = "AllowExecutionFromAPIGatewayRefactor"
+  action        = "lambda:InvokeFunction"
+  function_name = module.lambda.lambda_refactor_function_name
+  principal     = "apigateway.amazonaws.com"
+
+  # The /*/* portion grants access from any method on any resource
+  # within the API Gateway
+  source_arn = "${module.api_gateway.execution_arn}/*/*/*"
 }

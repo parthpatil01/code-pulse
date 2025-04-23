@@ -33,3 +33,21 @@ variable "sqs_queue_url" {
   description = "SQS queue URL"
   type        = string
 }
+
+variable "PINECONE_INDEX" {
+  description = "Pinecone index name"
+  type        = string  
+  
+}
+
+variable "OPENAI_API_KEY" {
+  description = "OpenAI API key"
+  type        = string    
+  
+}
+
+variable "PINECONE_API_KEY" {
+  description = "Pinecone API key"
+  type        = string      
+  
+}

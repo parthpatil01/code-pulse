@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 1. Create the environment file WITHOUT 'export' keywords
+# 1. Create the environment file
 cat > /etc/code-executor.conf << EOL
 AWS_REGION='${aws_region}'
 SQS_QUEUE_URL='${sqs_queue_url}'

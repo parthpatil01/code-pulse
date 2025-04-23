@@ -2,7 +2,7 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Set environment variables for Vite (you can define multiple variables here)
+# Set environment variables for Vite 
 ARG VITE_API_URL="__VITE_API_URL__"
 ENV VITE_API_URL=${VITE_API_URL}
 

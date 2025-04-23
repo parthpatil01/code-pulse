@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@pinecone-database/pinecone": "^5.1.1",
+    "dotenv": "^16.5.0",
+    "install": "^0.13.0",
+    "npm": "^11.3.0",
+    "openai": "^4.96.0"
+  }
+}

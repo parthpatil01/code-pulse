@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# 1. Load variables (with debug output)
+# 1. Load variables 
 echo "=== Loading variables ==="
 set -a
 source /etc/code-executor.conf
 set +a
-env | grep -E 'AWS|SQS|S3|DB_' # Debug output
+env | grep -E 'AWS|SQS|S3|DB_'
 
 # 2. Install dependencies
 sudo yum update -y

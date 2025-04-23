@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Editor from "@monaco-editor/react";
+import { DiffEditor } from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
-import { 
-  RotateCw, 
-  CheckCircle, 
-  AlertCircle, 
-  Loader2, 
-  Moon, 
+import {
+  RotateCw,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Moon,
   Sun,
   Play,
   Terminal,
@@ -19,19 +20,19 @@ import {
   FileInput,
   FileOutput,
   Plus,
-  Trash2
+  Trash2,
+  Wand2
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileExplorer } from "./FileExplorer";
 import { SettingsModal } from "./SettingsModal";
 
@@ -87,29 +88,52 @@ const App = () => {
   const [fontSize, setFontSize] = useState(14);
   const [wordWrap, setWordWrap] = useState(true);
   const [tabSize, setTabSize] = useState(2);
+  const [refactoring, setRefactoring] = useState(false);
+  const [diffView, setDiffView] = useState(false);
+  const [originalCode, setOriginalCode] = useState("");
+  const [refactoredCode, setRefactoredCode] = useState("");
+  const [editorTheme, setEditorTheme] = useState("vs-dark");
 
   const currentFile = files.find(file => file.id === activeFile) || files[0];
 
-  // Status colors and icons
+  const editorOptions = {
+    minimap: { enabled: true },
+    fontSize: fontSize,
+    wordWrap: wordWrap ? "on" : "off",
+    tabSize: tabSize,
+    automaticLayout: true,
+    scrollBeyondLastLine: false,
+    padding: { top: 10 },
+    renderWhitespace: "selection",
+    bracketPairColorization: { enabled: true },
+    guides: { bracketPairs: true },
+  };
+
+  const diffEditorOptions = {
+    ...editorOptions,
+    readOnly: true,
+    renderSideBySide: true,
+    enableSplitViewResizing: true,
+  };
+
   const statusConfig = {
-    pending: { 
-      color: "text-amber-500", 
+    pending: {
+      color: "text-amber-500",
       icon: <RotateCw className="animate-spin h-4 w-4" />,
       label: "Executing"
     },
-    completed: { 
-      color: "text-emerald-500", 
+    completed: {
+      color: "text-emerald-500",
       icon: <CheckCircle className="h-4 w-4" />,
       label: "Success"
     },
-    error: { 
-      color: "text-red-500", 
+    error: {
+      color: "text-red-500",
       icon: <AlertCircle className="h-4 w-4" />,
       label: "Error"
     }
   };
 
-  // Load settings from localStorage
   useEffect(() => {
     const savedSettings = localStorage.getItem('editorSettings');
     if (savedSettings) {
@@ -118,10 +142,10 @@ const App = () => {
       setWordWrap(wordWrap);
       setDarkMode(darkMode);
       setTabSize(tabSize);
+      setEditorTheme(darkMode ? "vs-dark" : "light");
     }
   }, []);
 
-  // Save settings to localStorage
   useEffect(() => {
     localStorage.setItem('editorSettings', JSON.stringify({
       fontSize,
@@ -129,19 +153,20 @@ const App = () => {
       darkMode,
       tabSize
     }));
+    setEditorTheme(darkMode ? "vs-dark" : "light");
   }, [fontSize, wordWrap, darkMode, tabSize]);
 
   useEffect(() => {
     let intervalId;
-    
+
     if (submissionId && submissionStatus !== 'completed' && submissionStatus !== 'error') {
       intervalId = setInterval(async () => {
         try {
           const response = await axios.get(`${API_URL}/status/${submissionId}`);
           const data = response.data;
-          
+
           setSubmissionStatus(data.status);
-          
+
           if (data.status === 'completed' || data.status === 'error') {
             setOutput(data.output || "// No output available");
             setIsSubmitting(false);
@@ -152,7 +177,7 @@ const App = () => {
         }
       }, 2000);
     }
-    
+
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
@@ -170,7 +195,7 @@ const App = () => {
     setOutput("// Submitting code...");
     setSubmissionId(null);
     setSubmissionStatus(null);
-    
+
     try {
       const response = await axios.post(`${API_URL}/run`, {
         code,
@@ -178,9 +203,9 @@ const App = () => {
       }, {
         headers: { "Content-Type": "application/json" },
       });
-      
+
       const data = response.data;
-      
+
       if (data.submissionId) {
         setSubmissionId(data.submissionId);
         setSubmissionStatus('pending');
@@ -193,6 +218,55 @@ const App = () => {
       setOutput(`// Server error: ${error.message}`);
       setIsSubmitting(false);
     }
+  };
+
+  const handleRefactorCode = async () => {
+    setRefactoring(true);
+    setOutput("// Refactoring code...");
+
+    try {
+      const response = await axios.post(`${API_URL}/refactor`, {
+        code,
+        language,
+      }, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = response.data;
+
+      if (data.refactoredCode) {
+        console.log(data);
+        setOriginalCode(data.originalCode);
+        setRefactoredCode(data.refactoredCode);
+        setDiffView(true);
+        setActiveTab("code");
+        setOutput("// Refactoring completed. Review changes above.");
+      } else {
+        setOutput("// No refactored code received");
+      }
+    } catch (error) {
+      setOutput(`// Refactoring error: ${error.message}`);
+    } finally {
+      setRefactoring(false);
+    }
+  };
+
+  const applyRefactoredCode = () => {
+    setCode(refactoredCode);
+    updateCurrentFile({ code: refactoredCode });
+    setDiffView(false);
+    setOutput("// Refactored code applied successfully.");
+  };
+
+  const cancelRefactor = () => {
+    setDiffView(false);
+    setOutput("// Refactoring cancelled.");
+  };
+
+  const updateCurrentFile = (updates) => {
+    setFiles(files.map(file =>
+      file.id === activeFile ? { ...file, ...updates } : file
+    ));
   };
 
   const handleLanguageChange = (value) => {
@@ -208,7 +282,7 @@ const App = () => {
       language,
       code: languageTemplates[language] || ""
     };
-    
+
     setFiles([...files, newFile]);
     setActiveFile(newId);
   };
@@ -227,7 +301,7 @@ const App = () => {
         language: currentFile.language,
         code: currentFile.code
       };
-      
+
       setFiles([...files, newFile]);
       setActiveFile(newId);
     }
@@ -242,10 +316,10 @@ const App = () => {
       const content = event.target.result;
       const extension = file.name.split('.').pop();
       let fileLanguage = 'javascript';
-      
+
       if (extension === 'py') fileLanguage = 'python';
       if (extension === 'java') fileLanguage = 'java';
-      
+
       const newId = Date.now().toString();
       const newFile = {
         id: newId,
@@ -253,7 +327,7 @@ const App = () => {
         language: fileLanguage,
         code: content
       };
-      
+
       setFiles([...files, newFile]);
       setActiveFile(newId);
     };
@@ -281,45 +355,22 @@ const App = () => {
     if (window.confirm("Are you sure you want to delete this file?")) {
       const newFiles = files.filter(file => file.id !== fileId);
       setFiles(newFiles);
-      
-      // If we're deleting the active file, switch to another file
+
       if (fileId === activeFile) {
         setActiveFile(newFiles[0].id);
       }
     }
   };
 
-  const updateCurrentFile = (updates) => {
-    setFiles(files.map(file => 
-      file.id === activeFile ? { ...file, ...updates } : file
-    ));
-  };
-
   const handleSelectFile = (file) => {
     if (file.id !== activeFile) {
-      // Save current file before switching
       updateCurrentFile({ code });
       setActiveFile(file.id);
     }
   };
 
-  const editorOptions = {
-    minimap: { enabled: true },
-    fontSize: fontSize,
-    wordWrap: wordWrap ? "on" : "off",
-    tabSize: tabSize,
-    automaticLayout: true,
-    readOnly: isSubmitting,
-    scrollBeyondLastLine: false,
-    padding: { top: 10 },
-    renderWhitespace: "selection",
-    bracketPairColorization: { enabled: true },
-    guides: { bracketPairs: true },
-  };
-
   return (
     <div className={`flex flex-col h-screen ${darkMode ? 'bg-[#0a0a0a] text-gray-100' : 'bg-white text-gray-900'}`}>
-      {/* Header */}
       <header className={`flex items-center justify-between p-3 border-b ${darkMode ? 'border-gray-800 bg-[#111111]' : 'border-gray-200 bg-gray-50'}`}>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -328,11 +379,11 @@ const App = () => {
               CodePulse
             </h1>
           </div>
-          
+
           <div className="hidden md:flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleNewFile}
               className="text-sm"
             >
@@ -353,10 +404,10 @@ const App = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <label className="flex items-center cursor-pointer w-full">
-                    <FileInput className="mr-2 h-4 w-4" /> Import
-                    <input 
-                      type="file" 
-                      className="hidden" 
+                    <FileInput className="mr-4 h-4 w-4" /> Import
+                    <input
+                      type="file"
+                      className="hidden"
                       onChange={handleImportFile}
                       accept=".js,.py,.java"
                     />
@@ -369,7 +420,7 @@ const App = () => {
             </DropdownMenu>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <div className="hidden md:flex items-center space-x-2">
             <Label htmlFor="language-select" className="text-sm text-muted-foreground">
@@ -386,12 +437,12 @@ const App = () => {
               </SelectContent>
             </Select>
           </div>
-          
+
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setDarkMode(!darkMode)}
                 className="hover:bg-gray-200 dark:hover:bg-gray-700"
               >
@@ -402,11 +453,30 @@ const App = () => {
               {darkMode ? 'Light mode' : 'Dark mode'}
             </TooltipContent>
           </Tooltip>
-          
-          <Button 
+
+          <Button
+            onClick={handleRefactorCode}
+            disabled={isSubmitting || refactoring}
+            variant="ghost"
+            className={`px-4 ${darkMode ? 'hover:bg-gray-700 hover:text-white ' : 'hover:bg-gray-200'} cursor-pointer`}
+          >
+            {refactoring ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Refactoring
+              </>
+            ) : (
+              <>
+                <Wand2 className="mr-2 h-4 w-4" />
+                Refactor
+              </>
+            )}
+          </Button>
+
+          <Button
             onClick={handleRunCode}
-            disabled={isSubmitting}
-            className="px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white"
+            disabled={isSubmitting || refactoring}
+            className="px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white hover:cursor-pointer"
           >
             {isSubmitting ? (
               <>
@@ -423,12 +493,10 @@ const App = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* File Explorer */}
-        <FileExplorer 
-          files={files} 
-          onSelectFile={handleSelectFile} 
+        <FileExplorer
+          files={files}
+          onSelectFile={handleSelectFile}
           activeFile={activeFile}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           collapsed={sidebarCollapsed}
@@ -436,11 +504,10 @@ const App = () => {
           onDeleteFile={handleDeleteFile}
           onSettingsOpen={() => setSettingsOpen(true)}
         />
-        
-        {/* Editor Area */}
+
         <div className="flex-1 flex flex-col overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className={`rounded-md  ${darkMode ? 'bg-[#111111]' : 'bg-gray-50'}`}>
+            <TabsList className={`rounded-md ${darkMode ? 'bg-[#111111]' : 'bg-gray-50'}`}>
               <TabsTrigger value="code" className={`flex items-center ${darkMode ? activeTab!='output' ?'text-black':'text-white' : 'text-black'}`}>
                 <Code className="mr-2 h-4 w-4" />
                 {currentFile?.name}
@@ -450,33 +517,86 @@ const App = () => {
                 Output
               </TabsTrigger>
             </TabsList>
-            
+
+            {/* Replace your current TabsContent for "code" with this */}
             <TabsContent value="code" className="flex-1 overflow-hidden m-0">
-              <Editor
-                height="100%"
-                language={language}
-                value={code}
-                onChange={(value) => setCode(value || "")}
-                theme={darkMode ? "vs-dark" : "light"}
-                options={editorOptions}
-                beforeMount={(monaco) => {
-                  monaco.editor.defineTheme('custom-dark', {
-                    base: 'vs-dark',
-                    inherit: true,
-                    rules: [],
-                    colors: {
-                      'editor.background': '#0a0a0a',
-                      'editor.lineHighlightBackground': '#111111',
-                      'editorLineNumber.foreground': '#555555',
-                    }
-                  });
-                }}
-                onMount={(editor) => {
-                  editor.focus();
-                }}
-              />
+              {diffView ? (
+                <div className="flex flex-col h-full">
+                  <div className={`flex justify-between items-center p-2 border-b ${darkMode ? 'border-gray-700 bg-[#1e1e1e]' : 'border-gray-200 bg-gray-100'}`}>
+                    <div className="text-sm font-mono">
+                      <span className="text-green-500">Original</span> → <span className="text-blue-500">Refactored</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={cancelRefactor}
+                        className="h-8 text-black hover:cursor-pointer hover:bg-gray-200"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={applyRefactoredCode}
+                        className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        Apply Changes
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex-1" key={`diff-${Date.now()}`}>
+                    <DiffEditor
+                      height="100%"
+                      originalLanguage={language}
+                      modifiedLanguage={language}
+                      original={originalCode}
+                      modified={refactoredCode}
+                      theme={darkMode ? "vs-dark" : "light"}
+                      options={{
+                        ...diffEditorOptions,
+                        renderSideBySide: true,
+                        originalEditable: false,
+                        readOnly: false,
+                        automaticLayout: true,
+                      }}
+                      beforeMount={(monaco) => {
+                        monaco.editor.defineTheme('custom-dark', {
+                          base: 'vs-dark',
+                          inherit: true,
+                          rules: [],
+                          colors: {
+                            'editor.background': '#0a0a0a',
+                            'minimap.background': '#111111',
+                          }
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <Editor
+                  height="100%"
+                  language={language}
+                  value={code}
+                  onChange={(value) => setCode(value || "")}
+                  theme={darkMode ? "vs-dark" : "light"}
+                  options={editorOptions}
+                  beforeMount={(monaco) => {
+                    monaco.editor.defineTheme('custom-dark', {
+                      base: 'vs-dark',
+                      inherit: true,
+                      rules: [],
+                      colors: {
+                        'editor.background': '#0a0a0a',
+                        'editor.lineHighlightBackground': '#111111',
+                        'editorLineNumber.foreground': '#555555',
+                      }
+                    });
+                  }}
+                />
+              )}
             </TabsContent>
-            
+
             <TabsContent value="output" className="flex-1 overflow-auto m-0">
               <div className={`h-full p-4 font-mono text-sm ${darkMode ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
                 {output.split('\n').map((line, i) => (
@@ -488,14 +608,19 @@ const App = () => {
               </div>
             </TabsContent>
           </Tabs>
-          
-          {/* Status Bar */}
+
           <div className={`flex items-center justify-between px-3 py-1 text-xs ${darkMode ? 'bg-[#111111] border-t border-gray-800 text-gray-400' : 'bg-gray-100 border-t border-gray-200 text-gray-600'}`}>
             <div className="flex items-center space-x-4">
               {submissionStatus && (
                 <div className={`flex items-center ${statusConfig[submissionStatus]?.color || 'text-gray-500'}`}>
                   {statusConfig[submissionStatus]?.icon}
                   <span className="ml-1">{statusConfig[submissionStatus]?.label}</span>
+                </div>
+              )}
+              {refactoring && (
+                <div className="flex items-center text-amber-500">
+                  <Loader2 className="animate-spin h-4 w-4 mr-1" />
+                  <span>Refactoring</span>
                 </div>
               )}
               <span>Ln {code.split('\n').length}, Col {code.length > 0 ? code.split('\n').pop().length : 0}</span>
@@ -509,7 +634,6 @@ const App = () => {
         </div>
       </div>
 
-      {/* Settings Modal */}
       <SettingsModal
         open={settingsOpen}
         onOpenChange={setSettingsOpen}

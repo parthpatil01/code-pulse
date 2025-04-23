@@ -55,11 +55,11 @@ export const FileExplorer = ({
             <Button 
               variant="ghost" 
               size="sm" 
-              className="w-full justify-start"
+              className="w-full justify-start hover:cursor-pointer"
               onClick={onSettingsOpen}
             >
               <Settings className="mr-2 h-4 w-4" />
-              <span className={darkMode ? 'text-gray-300' : 'text-gray-800'}>Settings</span>
+              <span className={darkMode ? 'hover:text-black ' : 'text-gray-800'}>Settings</span>
             </Button>
           </div>
         </>

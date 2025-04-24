@@ -22,14 +22,23 @@ CodePulse is a web-based code execution platform running on AWS that supports mu
 ## 🚀 Key Technical Architecture
 
 ✅ **Scalable on AWS**: Leverages the power of Amazon Web Services (AWS) with services like EC2, Docker, and Auto Scaling to ensure high availability and the ability to handle increasing user loads.
+
 ✅ **Intelligent Refactoring**: Implements Retrieval-Augmented Generation (RAG) combined with OpenAI models to provide intelligent code refactoring suggestions and improvements.
+
 ✅ **Vector DB for Knowledge**: Utilizes Pinecone, a vector database, to store and retrieve information relevant to code understanding and refactoring.
+
 ✅ **Serverless Workflows**: Employs AWS Lambda functions for efficient and cost-effective backend operations and event-driven workflows.
+
 ✅ **Decoupled Async Tasks**: Uses AWS Simple Queue Service (SQS) to decouple components and manage asynchronous code execution tasks reliably.
+
 ✅ **Secure Storage**: Ensures the security and durability of code submissions and metadata using AWS Simple Storage Service (S3) and Relational Database Service (RDS).
+
 ✅ **Monitoring**: Implements comprehensive monitoring and logging using AWS CloudWatch to track application performance and identify potential issues.
+
 ✅ **Managed API**: Provides a secure, scalable, and easily manageable API endpoint using AWS API Gateway.
+
 ✅ **Containerized**: Leverages Docker containers to provide isolated and consistent execution environments for user code.
+
 ✅ **Infrastructure as Code (IaC)**: Defines and manages the entire AWS infrastructure using Terraform, ensuring consistency and repeatability.
 
 ---
@@ -69,56 +78,49 @@ CodePulse is a web-based code execution platform running on AWS that supports mu
 ### Installation
 
 1. Clone the repository:
-   ```bash
-   git clone [https://github.com/parthpatil01/code-pulse.git](https://github.com/parthpatil01/code-pulse.git)
-   cd code-pulse
-   ```
+   ```bash
+   git clone https://github.com/parthpatil01/code-pulse.git
+   cd code-pulse
+   ```
 
 2. Set up the infrastructure using Terraform:
-   ```bash
-   cd terraform
-   terraform init
-   terraform apply
-   ```
+   ```bash
+   cd terraform
+   terraform init
+   terraform apply
+   ```
 
 3. Configure environment variables:
-   - Create a `.env` file in the `ec2-setup` directory with the following:
-     ```env
-     AWS_REGION=us-east-1
-     S3_BUCKET_NAME=your-s3-bucket-name
-     SQS_QUEUE_URL=your-sqs-queue-url
-     DB_HOST=your-rds-endpoint
-     DB_USER=your-db-username
-     DB_PASSWORD=your-db-password
-     DB_NAME=your-db-name
-     ```
+   - Create a `.env` file in the `ec2-setup` directory with the following:
+     ```env
+     AWS_REGION=us-east-1
+     S3_BUCKET_NAME=your-s3-bucket-name
+     SQS_QUEUE_URL=your-sqs-queue-url
+     DB_HOST=your-rds-endpoint
+     DB_USER=your-db-username
+     DB_PASSWORD=your-db-password
+     DB_NAME=your-db-name
+     ```
 
-4. Start the backend services (Lambda functions):
-   ```bash
-   cd backend/submit-code
-   npm install
-   zip -r function-submit.zip .
-   # Deployment will be done by terraform
-   cd ../check-status
-   npm install
-   zip -r function-status.zip .
-   # Deployment will be done by terraform
-   cd ../Refactor
-   npm install
-   zip -r function-refactor.zip .
-   # Deployment will be done by terraform
-   ```
+4. Start the backend services:
+   ```bash
+   cd backend/submit-code
+   npm install
+   zip -r function-submit.zip .
+   # Zip the rest of the lambda files e.g status, refactor
+   ```
 
 5. Start the frontend:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-6. Access the application via the URL provided after terraform finishes provisioning.
-   ```http://{ec2-ip}```
+6. Access the application at `http://ec2-ip` or `https://api-gateway-url`.
+
 ---
+
 
 ## Usage
 
@@ -150,16 +152,22 @@ code-pulse/
 ---
 ## Contributing
 
-Contributions are welcome\! To contribute:
+Contributions are welcome! To contribute:
 
-1.  Fork the repository.
-2.  Create a new branch:
-       `bash    git checkout -b feature/your-feature-name    `
-3.  Commit your changes:
-       `bash    git commit -m "Add your feature"    `
-4.  Push to your branch:
-       `bash    git push origin feature/your-feature-name    `
-5.  Open a pull request.
+1. Fork the repository.
+2. Create a new branch:
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. Commit your changes:
+   ```bash
+   git commit -m "Add your feature"
+   ```
+4. Push to your branch:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. Open a pull request.
 
 ---
 

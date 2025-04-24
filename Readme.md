@@ -116,7 +116,7 @@ CodePulse is a web-based code execution platform running on AWS that supports mu
    npm run dev
    ```
 
-6. Access the application at `http://ec2-ip` or `https://api-gateway-url`.
+6. Access the application at `http://frontend-ec2-ip` or integrate the code executor in your workflow using `https://api-gateway-url`.
 
 ---
 

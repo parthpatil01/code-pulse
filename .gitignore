@@ -12,3 +12,4 @@ backend/check-status/node_modules/
 backend/submit-code/node_modules/
 vector-store-upload/node_modules/
 vector-store-upload/.env
+vector-store-upload/docs/refactoring-guide.md

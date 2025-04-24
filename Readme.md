@@ -83,14 +83,7 @@ CodePulse is a web-based code execution platform running on AWS that supports mu
    cd code-pulse
    ```
 
-2. Set up the infrastructure using Terraform:
-   ```bash
-   cd terraform
-   terraform init
-   terraform apply
-   ```
-
-3. Configure environment variables:
+2. Configure environment variables:
    - Create a `.env` file in the `ec2-setup` directory with the following:
      ```env
      AWS_REGION=us-east-1
@@ -102,12 +95,18 @@ CodePulse is a web-based code execution platform running on AWS that supports mu
      DB_NAME=your-db-name
      ```
 
-4. Start the backend services:
+3. Zip the backend services:
    ```bash
    cd backend/submit-code
    npm install
    zip -r function-submit.zip .
    # Zip the rest of the lambda files e.g status, refactor
+   ```
+4. Set up the infrastructure using Terraform:
+   ```bash
+   cd terraform
+   terraform init
+   terraform apply
    ```
 
 5. Start the frontend:
